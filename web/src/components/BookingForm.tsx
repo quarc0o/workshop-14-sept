@@ -13,6 +13,16 @@ function localInputValue(date: Date): string {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
+const WEEKDAYS = [
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+  { value: 0, label: 'Sunday' },
+];
+
 function defaultTime(hour: number): string {
   const date = new Date();
   date.setDate(date.getDate() + 1);
@@ -26,6 +36,9 @@ export function BookingForm({ rooms, onCreated }: Props) {
   const [bookedBy, setBookedBy] = useState('');
   const [startsAt, setStartsAt] = useState(defaultTime(9));
   const [endsAt, setEndsAt] = useState(defaultTime(10));
+  const [repeat, setRepeat] = useState(false);
+  const [weekday, setWeekday] = useState(String(new Date(defaultTime(9)).getDay()));
+  const [weeks, setWeeks] = useState('4');
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -36,16 +49,29 @@ export function BookingForm({ rooms, onCreated }: Props) {
     setConfirmation(null);
     setSaving(true);
 
+    const payload = {
+      roomId: Number(roomId),
+      title,
+      bookedBy,
+      startsAt: new Date(startsAt).toISOString(),
+      endsAt: new Date(endsAt).toISOString(),
+    };
+
     try {
-      const booking = await api.createBooking({
-        roomId: Number(roomId),
-        title,
-        bookedBy,
-        startsAt: new Date(startsAt).toISOString(),
-        endsAt: new Date(endsAt).toISOString(),
-      });
+      if (repeat) {
+        const bookings = await api.createBookingSeries({
+          ...payload,
+          weekday: Number(weekday),
+          weeks: Number(weeks),
+        });
+        setConfirmation(
+          `Booked ${rooms.find((room) => room.id === payload.roomId)?.name} ${bookings.length} times.`,
+        );
+      } else {
+        const booking = await api.createBooking(payload);
+        setConfirmation(`Booked ${rooms.find((room) => room.id === booking.roomId)?.name}.`);
+      }
       setTitle('');
-      setConfirmation(`Booked ${rooms.find((room) => room.id === booking.roomId)?.name}.`);
       await onCreated();
     } catch (caught) {
       setError(caught instanceof api.ApiError ? caught.message : 'Could not reach the API');
@@ -109,8 +135,44 @@ export function BookingForm({ rooms, onCreated }: Props) {
           />
         </label>
 
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={repeat}
+            onChange={(event) => setRepeat(event.target.checked)}
+          />
+          Repeat weekly
+        </label>
+
+        {repeat && (
+          <>
+            <label>
+              Weekday
+              <select value={weekday} onChange={(event) => setWeekday(event.target.value)}>
+                {WEEKDAYS.map((day) => (
+                  <option key={day.value} value={day.value}>
+                    {day.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Number of weeks
+              <input
+                type="number"
+                min={1}
+                max={52}
+                value={weeks}
+                onChange={(event) => setWeeks(event.target.value)}
+                required
+              />
+            </label>
+          </>
+        )}
+
         <button type="submit" disabled={saving}>
-          {saving ? 'Booking…' : 'Book room'}
+          {saving ? 'Booking…' : repeat ? 'Book series' : 'Book room'}
         </button>
 
         {error && <p className="form-message form-error">{error}</p>}

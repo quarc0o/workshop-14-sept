@@ -203,3 +203,15 @@ button:disabled {
 .notice-error {
   color: var(--danger);
 }
+
+.toggle {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  color: var(--ink);
+}
+
+.toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}

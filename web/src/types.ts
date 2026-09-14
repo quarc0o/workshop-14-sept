@@ -22,3 +22,9 @@ export type NewBooking = {
   startsAt: string;
   endsAt: string;
 };
+
+export type NewBookingSeries = NewBooking & {
+  /** 0 = søndag … 6 = lørdag, som Date.getDay() */
+  weekday: number;
+  weeks: number;
+};

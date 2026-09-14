@@ -5,3 +5,4 @@ export const bookingRoutes = Router();
 
 bookingRoutes.get('/', bookingController.list);
 bookingRoutes.post('/', bookingController.create);
+bookingRoutes.post('/series', bookingController.createSeries);

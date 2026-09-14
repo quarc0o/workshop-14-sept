@@ -74,3 +74,33 @@ export function insert(booking: NewBooking): Booking {
 
   return created;
 }
+
+/**
+ * Skriver alle bookingene i ett INSERT-statement, slik at enten alle eller
+ * ingen havner i databasen. RETURNING gir oss radene tilbake uten et nytt
+ * oppslag; rekkefølgen fra RETURNING er ikke garantert, så vi sorterer selv.
+ */
+export function insertMany(bookings: NewBooking[]): Booking[] {
+  if (bookings.length === 0) {
+    return [];
+  }
+
+  const placeholders = bookings.map(() => '(?, ?, ?, ?, ?)').join(', ');
+  const values = bookings.flatMap((booking) => [
+    booking.roomId,
+    booking.title,
+    booking.bookedBy,
+    booking.startsAt,
+    booking.endsAt,
+  ]);
+
+  const rows = getDatabase()
+    .prepare(
+      `INSERT INTO bookings (room_id, title, booked_by, starts_at, ends_at)
+       VALUES ${placeholders}
+       RETURNING ${columns}`,
+    )
+    .all(...values) as BookingRow[];
+
+  return rows.map(toBooking).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+}

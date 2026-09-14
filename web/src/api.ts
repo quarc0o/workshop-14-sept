@@ -1,4 +1,4 @@
-import type { Booking, NewBooking, Room } from './types.ts';
+import type { Booking, NewBooking, NewBookingSeries, Room } from './types.ts';
 
 export class ApiError extends Error {
   constructor(
@@ -33,5 +33,13 @@ export function createBooking(booking: NewBooking): Promise<Booking> {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(booking),
+  });
+}
+
+export function createBookingSeries(series: NewBookingSeries): Promise<Booking[]> {
+  return request<Booking[]>('/api/bookings/series', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(series),
   });
 }
